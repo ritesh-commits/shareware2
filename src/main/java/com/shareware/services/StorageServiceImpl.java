@@ -1,13 +1,16 @@
 package com.shareware.services;
 
+import com.shareware.model.FileMetadata;
 import com.shareware.uploadingfiles.storage.StorageService;
+import com.shareware.utils.MetadataUtils;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +19,8 @@ import java.util.stream.Stream;
 
 @Service
 public class StorageServiceImpl implements StorageService {
-    private final Path root = Paths.get("/Users/riteshgoel/Documents/GitHub/shareware2/uploads");;
+    private final Path root = Paths.get("/Users/riteshgoel/Documents/GitHub/shareware2/uploads");
+    ;
 
     @Override
     public void init() {
@@ -29,10 +33,22 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public void store(MultipartFile file) {
-        try {
-            Files.copy(file.getInputStream(), this.root.resolve(file.getOriginalFilename()));
+        FileMetadata fileMetadata = MetadataUtils.getFileMetadata(file);
+        File f = new File(fileMetadata.getHashedFilename());
+        try (OutputStream outputStream = new FileOutputStream(f)) {
+            IOUtils.copy(file.getInputStream(), outputStream);
+            writeMetadataFile(fileMetadata);
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
+        }
+    }
+
+    public void writeMetadataFile(FileMetadata fileMetadata) {
+        File metadataFile = new File(fileMetadata.getMetadataPath());
+        try (PrintStream out = new PrintStream(new FileOutputStream(metadataFile))) {
+            out.print(fileMetadata.toJson());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
     }
 
