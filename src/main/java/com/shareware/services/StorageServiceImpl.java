@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 @Service
 public class StorageServiceImpl implements StorageService {
-    private final Path root = Paths.get("uploads");;
+    private final Path root = Paths.get("/Users/riteshgoel/Documents/GitHub/shareware2/uploads");;
 
     @Override
     public void init() {

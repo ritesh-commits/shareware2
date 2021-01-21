@@ -17,12 +17,16 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.shareware.uploadingfiles.storage.StorageFileNotFoundException;
 import com.shareware.uploadingfiles.storage.StorageService;
 
-@Controller
-@CrossOrigin("http://localhost:8091")
+@RestController
 public class FileUploadController {
 
     @Autowired
     private StorageService storageService;
+
+    @GetMapping("/check")
+    public String micTest() {
+        return "hello";
+    }
 
     @GetMapping("/")
     public String listUploadedFiles(Model model) throws IOException {
