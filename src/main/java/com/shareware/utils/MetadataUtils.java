@@ -9,13 +9,13 @@ import java.util.Base64;
 
 public class MetadataUtils {
 
-    public static FileMetadata getFileMetadata(MultipartFile file) {
+    public static FileMetadata getFileMetadata(String linkId, MultipartFile file) {
         FileMetadata fileMetadata = new FileMetadata();
         fileMetadata.setUploadTimestamp(System.currentTimeMillis());
         fileMetadata.setExpiryTimestamp(System.currentTimeMillis() + 10000000);
         fileMetadata.setSize(file.getSize());
         String name = file.getOriginalFilename();
-        String hashedName = Base64.getEncoder().encodeToString(name.getBytes());
+        String hashedName = linkId;
         fileMetadata.setId(hashedName);
         fileMetadata.setOriginalFilename(name);
 

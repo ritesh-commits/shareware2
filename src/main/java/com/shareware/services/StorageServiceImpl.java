@@ -1,7 +1,10 @@
 package com.shareware.services;
 
 import com.shareware.model.FileMetadata;
+import com.shareware.model.UploadLink;
+import com.shareware.repository.LinkRepository;
 import com.shareware.uploadingfiles.storage.StorageService;
+import com.shareware.utils.CryptoUtils;
 import com.shareware.utils.MetadataUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.core.io.Resource;
@@ -15,11 +18,12 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
 @Service
 public class StorageServiceImpl implements StorageService {
-    private final Path root = Paths.get("/Users/riteshgoel/Documents/GitHub/shareware2/uploads");
+    private final Path root = Paths.get("/Users/riteshgoel/Documents/GitHub/shareware2/");
     ;
 
     @Override
@@ -32,8 +36,14 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void store(MultipartFile file) {
-        FileMetadata fileMetadata = MetadataUtils.getFileMetadata(file);
+    public String store(String linkId, MultipartFile file) {
+        UploadLink uploadLink = LinkRepository.getLink(linkId);
+
+        if (uploadLink == null || uploadLink.getExpiryTime().isBefore(LocalDateTime.now())) {
+            return "Upload link doesn't exist or expired";
+        }
+
+        FileMetadata fileMetadata = MetadataUtils.getFileMetadata(linkId, file);
         File f = new File(fileMetadata.getHashedFilename());
         try (OutputStream outputStream = new FileOutputStream(f)) {
             IOUtils.copy(file.getInputStream(), outputStream);
@@ -41,6 +51,7 @@ public class StorageServiceImpl implements StorageService {
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
+        return fileMetadata.getId();
     }
 
     public void writeMetadataFile(FileMetadata fileMetadata) {
@@ -71,9 +82,8 @@ public class StorageServiceImpl implements StorageService {
         try {
             Path file = root.resolve(filename);
             Resource resource = new UrlResource(file.toUri());
-
             if (resource.exists() || resource.isReadable()) {
-                return resource;
+                return CryptoUtils.decryptFile(resource, null);
             } else {
                 throw new RuntimeException("Could not read the file!");
             }
