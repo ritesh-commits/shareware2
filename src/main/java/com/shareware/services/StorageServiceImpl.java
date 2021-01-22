@@ -39,7 +39,7 @@ public class StorageServiceImpl implements StorageService {
     public String store(String linkId, MultipartFile file) {
         UploadLink uploadLink = LinkRepository.getLink(linkId);
 
-        if (uploadLink == null || uploadLink.getExpiryTime().isBefore(LocalDateTime.now())) {
+        if (uploadLink == null || uploadLink.getExpiryTime().isBefore(LocalDateTime.now()) || uploadLink.isExpired()) {
             return "Upload link doesn't exist or expired";
         }
 
@@ -51,7 +51,8 @@ public class StorageServiceImpl implements StorageService {
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
-        return fileMetadata.getId();
+        uploadLink.setExpired(true);
+        return "File uploaded successfully: " + fileMetadata.getId();
     }
 
     public void writeMetadataFile(FileMetadata fileMetadata) {
@@ -80,14 +81,31 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public Resource loadAsResource(String filename) {
         try {
-            Path file = root.resolve(filename);
+            Path file = root.resolve(filename + ".json");
             Resource resource = new UrlResource(file.toUri());
+            FileMetadata fileMetadata = null;
             if (resource.exists() || resource.isReadable()) {
-                return CryptoUtils.decryptFile(resource, null);
+                 fileMetadata = MetadataUtils.getfileFromMetadata(resource);
             } else {
                 throw new RuntimeException("Could not read the file!");
             }
-        } catch (MalformedURLException e) {
+            Path binary = root.resolve(filename + ".binary");
+            Resource r = new UrlResource(binary.toUri());
+
+            File f = r.getFile();
+
+            File original = new File(fileMetadata.getOriginalFilename());
+
+            f.renameTo(original);
+
+            Path toOriginalFile = root.resolve(fileMetadata.getOriginalFilename());
+            Resource originalFile = CryptoUtils.decryptFile(new UrlResource(toOriginalFile.toUri()), null);
+            if (originalFile.exists() || originalFile.isReadable()) {
+                return originalFile;
+            } else {
+                throw new RuntimeException("Could not read the file!");
+            }
+        } catch (IOException e) {
             throw new RuntimeException("Error: " + e.getMessage());
         }
     }

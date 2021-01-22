@@ -1,11 +1,16 @@
 package com.shareware.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shareware.model.FileMetadata;
+import org.springframework.core.io.Resource;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.util.Base64;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class MetadataUtils {
 
@@ -25,6 +30,16 @@ public class MetadataUtils {
         fileMetadata.setLink("link");
 
         return fileMetadata;
+    }
+
+    public static FileMetadata getfileFromMetadata(Resource resource) {
+        try (Reader reader = new InputStreamReader(resource.getInputStream(), UTF_8)) {
+            String json =  FileCopyUtils.copyToString(reader);
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(json, FileMetadata.class);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
 }
