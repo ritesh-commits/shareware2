@@ -89,6 +89,11 @@ public class StorageServiceImpl implements StorageService {
             } else {
                 throw new RuntimeException("Could not read the file!");
             }
+
+            if (fileMetadata.isDownloadExpired()) {
+                return null;
+            }
+
             Path binary = root.resolve(filename + ".binary");
             Resource r = new UrlResource(binary.toUri());
 
@@ -101,6 +106,7 @@ public class StorageServiceImpl implements StorageService {
             Path toOriginalFile = root.resolve(fileMetadata.getOriginalFilename());
             Resource originalFile = CryptoUtils.decryptFile(new UrlResource(toOriginalFile.toUri()), null);
             if (originalFile.exists() || originalFile.isReadable()) {
+                fileMetadata.setDownloadExpired(true);
                 return originalFile;
             } else {
                 throw new RuntimeException("Could not read the file!");

@@ -17,6 +17,15 @@ public class FileMetadata {
     private String link;
     private String path;
     private String metadataPath;
+    private boolean isDownloadExpired;
+
+    public boolean isDownloadExpired() {
+        return isDownloadExpired;
+    }
+
+    public void setDownloadExpired(boolean downloadExpired) {
+        isDownloadExpired = downloadExpired;
+    }
 
     public String getId() {
         return id;
